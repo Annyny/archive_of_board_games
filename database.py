@@ -63,6 +63,20 @@ class DatabaseManager:
             self.conn.rollback()
             return False
         
+    def delete_game(self, id):
+        """Удаление игры"""
+        try:
+            self.cursor.execute("DELETE FROM games WHERE id=?", (id,))
+            self.conn.commit()
+            logger.info(f"Запись ID {id} удалена")
+            return True
+        except sqlite3.Error as e:
+            logger.error(f"Ошибка удаления: {e}")
+            self.conn.rollback()
+            return False
+        
+        
+        
    
         
     

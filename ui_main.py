@@ -62,6 +62,10 @@ class GameCard(QtWidgets.QFrame):
         difficulty = self.game_data['difficulty']   
         diff_label = QtWidgets.QLabel(difficulty)
 
+        self.btn_delete = QtWidgets.QPushButton("Удалить")
+        self.btn_delete.setStyleSheet("background-color: rgb(255, 170, 127);")
+        self.btn_delete.clicked.connect(self.on_delete)
+
         info_layout.addWidget(name_label)
         info_layout.addWidget(players_label)
         info_layout.addWidget(time_label)
@@ -69,8 +73,14 @@ class GameCard(QtWidgets.QFrame):
         
         layout.addWidget(self.image_label)
         layout.addLayout(info_layout)
+        layout.addWidget(self.btn_delete)
         
         self.setLayout(layout)
+
+    def on_delete(self):
+        """Обработка удаления"""
+        if self.parent_window:
+            self.parent_window._delete_game(self.game_data['id'])
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -112,16 +122,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sb_filter = QtWidgets.QSpinBox(self.central_widget)
         self.sb_filter.setRange(1, 20)
         self.sb_filter.setValue(1)
+        
         self.btn_clean_filter = QtWidgets.QPushButton("Сбросить фильтр")
         self.btn_clean_filter.setStyleSheet("background-color: rgb(170, 255, 255);")
-        self.btn_delete = QtWidgets.QPushButton("Удалить игру")
-        self.btn_delete.setStyleSheet("background-color: rgb(255, 170, 127);")
 
         self.left_btn_layout = QtWidgets.QHBoxLayout()
         self.left_btn_layout.addWidget(self.lbl_filter)
         self.left_btn_layout.addWidget(self.sb_filter)
         self.left_btn_layout.addWidget(self.btn_clean_filter)
-        self.left_btn_layout.addWidget(self.btn_delete)
 
         self.left_btn_layout.setStretch(0, 1)
         self.left_btn_layout.setStretch(2, 1)
@@ -225,7 +233,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """Отслеживание сигналов"""
         self.sb_filter.valueChanged.connect(self._apply_filter)
         self.btn_clean_filter.clicked.connect(self._clean_filter)
-        self.btn_delete.clicked.connect(self._delete_game)
         self.btn_load_img.clicked.connect(self._load_img)
         self.btn_delete_img.clicked.connect(self._delete_img)
         self.btn_add.clicked.connect(self._add_game)
@@ -261,9 +268,18 @@ class MainWindow(QtWidgets.QMainWindow):
         """Сброс фильтра"""
         print("фильтр сброшен")
 
-    def _delete_game(self):
+    def _delete_game(self, id):
         """Удаление игры"""
-        print('Игра удалена')
+        reply = QtWidgets.QMessageBox.question(self,"Подтверждение удаления",
+            "Вы уверены, что хотите удалить эту игру?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            if self.db.delete_game(id):
+                self._refresh_games()
+                self._clear_fields()
+                QtWidgets.QMessageBox.information(self, "Успех", "Игра удалена")
+            else:
+                QtWidgets.QMessageBox.critical(self, "Ошибка", "Не удалось удалить игру")
 
     def _load_img(self):
         """Загрузка изображения"""
