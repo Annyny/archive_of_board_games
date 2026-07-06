@@ -358,5 +358,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cb_difficulty.setCurrentIndex(0)
         self.current_photo_path = None
         
+    def closeEvent(self, event):
+        """Переопределение закрытия окна"""
+        reply = QtWidgets.QMessageBox.question(self, "Выход", "Вы уверены, что хотите выйти?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                self.db.close()
+                logger.info("БД закрыта")
+            except Exception as e:
+                logger.error(f"Ошибка при закрытии БД: {e}")
+            event.accept()
+        else:
+            event.ignore()
+
+    
 
 

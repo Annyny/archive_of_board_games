@@ -87,6 +87,15 @@ class DatabaseManager:
             logger.error(f"Ошибка фильтрации: {e}")
             return []
 
+    def close(self):
+        """Закрытие соединения"""
+        try:
+            if self.conn:
+                self.conn.close()
+                logger.info("Соединение с БД закрыто")
+        except sqlite3.Error as e:
+            logger.error(f"Ошибка при закрытии БД: {e}")   
+   
         
         
         
