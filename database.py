@@ -1,6 +1,6 @@
 import sqlite3
 import logging
-from typing import List, Dict, Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,19 @@ class DatabaseManager:
             logger.error(f"Ошибка удаления: {e}")
             self.conn.rollback()
             return False
+        
+    def get_filtered(self, min_players):
+        """Применение фильтра"""
+        try:
+            self.cursor.execute("""
+                SELECT id, name, players, time, difficulty, photo_path
+                FROM games WHERE players <= ? ORDER BY name""", (min_players,))
+            logger.info(f"Игры отфильтрованы")
+            return [dict(row) for row in self.cursor.fetchall()]
+        except sqlite3.Error as e:
+            logger.error(f"Ошибка фильтрации: {e}")
+            return []
+
         
         
         

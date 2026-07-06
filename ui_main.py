@@ -46,8 +46,8 @@ class GameCard(QtWidgets.QFrame):
         info_layout = QtWidgets.QVBoxLayout()
 
         name_label = QtWidgets.QLabel(self.game_data['name'])
-        name_label.setStyleSheet("font: 75 10pt 'Myanmar Text';")
-        name_label.setWordWrap(True)
+        name_label.setStyleSheet("font: 75 14pt 'Myanmar Text';")
+        # name_label.setWordWrap(True)
         name_label.setAlignment(QtCore.Qt.AlignCenter)
         
         players_label = QtWidgets.QLabel(f"Кол-во игроков: {self.game_data['players']}+")
@@ -264,11 +264,26 @@ class MainWindow(QtWidgets.QMainWindow):
     def _apply_filter(self):
         """Применение фильтра"""
         min_players = self.sb_filter.value()
-        print("Минимум", min_players)
+        games = self.db.get_filtered(min_players)
+        self._filtered_cards(games)
 
+    def _filtered_cards(self, games):
+        """Отображение карточек, соответствующих фильтру"""
+        for i in reversed(range(self.cards_layout.count())):
+            widget = self.cards_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        
+        for i, record in enumerate(games):
+            card = GameCard(record, self)
+            row = i // 3
+            col = i % 3
+            self.cards_layout.addWidget(card, row, col)
+            
     def _clean_filter(self):
         """Сброс фильтра"""
-        print("фильтр сброшен")
+        self.sb_filter.setValue(1)
+        self._refresh_games()
 
     def _delete_game(self, id):
         """Удаление игры"""
