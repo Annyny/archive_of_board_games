@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import logging
+import database
 
 logger = logging.getLogger(__name__)
 
@@ -7,12 +8,22 @@ logger = logging.getLogger(__name__)
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.current_photo_path = None
+
         self.setWindowTitle("Архив настольных игр")
         self.resize(1350, 870)
         self.setMinimumSize(QtCore.QSize(1350, 870))
         self.setStyleSheet("background-color: rgb(234, 239, 255);\n"
 "font: 9pt \"Myanmar Text\";\n"
 "")
+        # Инициализация БД
+        self.db = database.DatabaseManager()
+        if not self.db.init_db():
+            QtWidgets.QMessageBox.critical(self, "Ошибка", "Не удалось инициализировать БД")
+            self.close()
+            return
+
         self._setup_ui()
         self._bind_signals()
 
@@ -155,6 +166,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_delete_img.clicked.connect(self._delete_img)
         self.btn_add.clicked.connect(self._add_game)
 
+    def _time_to_minutes(self, time):
+        return time.hour() * 60 + time.minute()
+    
     def _apply_filter(self):
         """Применение фильтра"""
         min_players = self.sb_filter.value()
@@ -166,7 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _delete_game(self):
         """Удаление игры"""
-        print("Игра удалена")
+        print('Игра удалена')
 
     def _load_img(self):
         """Загрузка изображения"""
@@ -178,6 +192,37 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _add_game(self):
         """Сохранение игры"""
-        print("Игра сохранена")
+        if not self.le_name.text().strip():
+            QtWidgets.QMessageBox.warning(self, "Ошибка", "Поле 'Название' обязательно для заполнения.")
+            return
+
+        time_minutes = self._time_to_minutes(self.time_edit.time())
+        
+        if time_minutes < 1:
+            QtWidgets.QMessageBox.warning(self, "Ошибка", "Время партии должно быть больше 0 минут.")
+            return
+        
+        data = {
+            "name": self.le_name.text().strip(),
+            "players": self.sb_count.value(),
+            "time": time_minutes,
+            "difficulty": self.cb_difficulty.currentText(),
+            "photo_path": self.current_photo_path
+        }
+        self.db.insert_game(data)
+        self._clear_fields()
+        QtWidgets.QMessageBox.information(self, "Успех", "Запись добавлена в базу.")
+
+    def _clear_fields(self):
+        """Очистка полей формы"""
+        self.le_name.clear()
+        self.lbl_img.setText("Нет фото")
+        self.lbl_img.setStyleSheet("background-color: #f0f0f0; border-radius: 8px;")     
+        self.sb_count.setValue(2)
+        self.time_edit.setTime(QtCore.QTime(0, 30)) 
+        self.cb_difficulty.setCurrentIndex(0)
+        self.current_photo_path = None
+        
+
 
 
