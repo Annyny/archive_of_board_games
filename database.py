@@ -33,7 +33,19 @@ class DatabaseManager:
         except sqlite3.Error as e:
             logger.error(f"Ошибка инициализации БД: {e}")
             return False
-        
+
+    def get_all(self):
+        """Получение всех записей"""
+        try:
+            self.cursor.execute("""
+                SELECT id, name, players, time, difficulty, photo_path
+                FROM games ORDER BY name
+            """)
+            return [dict(row) for row in self.cursor.fetchall()]
+        except sqlite3.Error as e:
+            logger.error(f"Ошибка получения записей: {e}")
+            return []
+          
     def insert_game(self, data):
         """Добавление игры"""
         try:

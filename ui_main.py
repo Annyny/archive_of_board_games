@@ -5,6 +5,74 @@ import database
 logger = logging.getLogger(__name__)
 
 
+class GameCard(QtWidgets.QFrame):
+    """Виджет карточки игры"""
+    def __init__(self, game_data, parent=None):
+        super().__init__(parent)
+        self.game_data = game_data
+        self.parent_window = parent
+        self.setStyleSheet("background-color: #ffffff; font: 9pt 'Myanmar Text';")
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Настройка карточки"""
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Изображение
+        self.image_label = QtWidgets.QLabel()
+        self.image_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.image_label.setMinimumHeight(150)
+        self.image_label.setMaximumHeight(200)
+        self.image_label.setStyleSheet("background-color: #f0f0f0; border-radius: 8px;")
+        self.image_label.setScaledContents(True)
+        
+        # Загрузка изображения
+        if self.game_data['photo_path']:
+            pixmap = QtGui.QPixmap(self.game_data['photo_path'])
+            if not pixmap.isNull():
+                self.image_label.setPixmap(pixmap.scaled(
+                    200, 200,
+                    QtCore.Qt.KeepAspectRatio,
+                    QtCore.Qt.SmoothTransformation
+                ))
+            else:
+                self.image_label.setText("Нет фото")
+        else:
+            self.image_label.setText("Нет фото")
+        
+        # Информация
+        info_layout = QtWidgets.QVBoxLayout()
+
+        name_label = QtWidgets.QLabel(self.game_data['name'])
+        name_label.setWordWrap(True)
+        name_label.setAlignment(QtCore.Qt.AlignCenter)
+        
+        players_label = QtWidgets.QLabel(f"Кол-во игроков: {self.game_data['players']}+")
+        
+        minutes = self.game_data['time']
+        hours = minutes // 60
+        mins = minutes % 60
+        if hours > 0:
+            time = f"Время: {hours}ч {mins}мин"
+        else:
+            time = f"Время: {mins}мин"
+        time_label = QtWidgets.QLabel(time)
+        
+        difficulty = self.game_data['difficulty']   
+        diff_label = QtWidgets.QLabel(difficulty)
+
+        info_layout.addWidget(name_label)
+        info_layout.addWidget(players_label)
+        info_layout.addWidget(time_label)
+        info_layout.addWidget(diff_label)
+        
+        layout.addWidget(self.image_label)
+        layout.addLayout(info_layout)
+        
+        self.setLayout(layout)
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -26,6 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._setup_ui()
         self._bind_signals()
+        self._refresh_games()
 
         logger.info("Главное окно инициализировано")
 
@@ -58,19 +127,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.left_btn_layout.setStretch(2, 1)
         self.left_btn_layout.setStretch(3, 1)
         
-        self.scroll_area = QtWidgets.QScrollArea(self.central_widget)
+        self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         
-        self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollContentLayout = QtWidgets.QGridLayout(self.scrollAreaWidgetContents)
-        self.scrollContentLayout.setContentsMargins(0, 0, 0, 0)
+        self.cards_container = QtWidgets.QWidget()
+        self.cards_layout = QtWidgets.QGridLayout(self.cards_container)
+        self.cards_layout.setContentsMargins(0, 0, 0, 0)
         
-        # # Здесь будут добавляться карточки игр динамически
-        # self.empty_widget = QtWidgets.QWidget(self.scrollAreaWidgetContents)
-
-        # self.scrollContentLayout.addWidget(self.empty_widget)
-        
-        self.scroll_area.setWidget(self.scrollAreaWidgetContents)
+        self.scroll_area.setWidget(self.cards_container)
 
         self.left_layout = QtWidgets.QVBoxLayout()
         self.left_layout.addWidget(self.lbl_collection)
@@ -167,8 +231,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_add.clicked.connect(self._add_game)
 
     def _time_to_minutes(self, time):
+        """Конвертация времени в минуты"""
         return time.hour() * 60 + time.minute()
     
+    def _refresh_games(self):
+        """Обновление данных из БД"""
+        # Очищаем контейнер
+        for i in reversed(range(self.cards_layout.count())):
+            widget = self.cards_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        
+        # Получаем данные
+        records = self.db.get_all()
+        
+        # Создаем карточки
+        for i, record in enumerate(records):
+            card = GameCard(record, self)
+            row = i // 3
+            col = i % 3
+            self.cards_layout.addWidget(card, row, col)
+
     def _apply_filter(self):
         """Применение фильтра"""
         min_players = self.sb_filter.value()
@@ -210,6 +293,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "photo_path": self.current_photo_path
         }
         self.db.insert_game(data)
+        self._refresh_games()
         self._clear_fields()
         QtWidgets.QMessageBox.information(self, "Успех", "Запись добавлена в базу.")
 
@@ -223,6 +307,5 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cb_difficulty.setCurrentIndex(0)
         self.current_photo_path = None
         
-
 
 
