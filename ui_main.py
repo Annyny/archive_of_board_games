@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import logging
 import database
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ class GameCard(QtWidgets.QFrame):
         info_layout = QtWidgets.QVBoxLayout()
 
         name_label = QtWidgets.QLabel(self.game_data['name'])
+        name_label.setStyleSheet("font: 75 10pt 'Myanmar Text';")
         name_label.setWordWrap(True)
         name_label.setAlignment(QtCore.Qt.AlignCenter)
         
@@ -283,11 +285,29 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _load_img(self):
         """Загрузка изображения"""
-        print("Изображение загружено")
-
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Выберите изображение",
+            "", "Images (*.png *.jpg *.jpeg *.bmp *.gif)")
+        if not path:
+            return
+        try:
+            img = Image.open(path).convert("RGBA") # Приводим к единому формату
+            img.thumbnail((260, 260), Image.LANCZOS) # Масштабируем с сохранением пропорций
+            # Конвертация Pillow -> Qt
+            qt_img = QtGui.QImage(img.tobytes(), img.width, img.height, QtGui.QImage.Format_RGBA8888)
+            pixmap = QtGui.QPixmap.fromImage(qt_img)
+            self.lbl_img.setPixmap(pixmap)
+            self.current_photo_path = path
+            self.lbl_img.setStyleSheet("background-color: #f0f0f0;")
+            logger.info(f"Загружено фото: {path}")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить изображение:\n{e}")
+            logger.error(f"Ошибка загрузки изображения: {e}")
+    
     def _delete_img(self):
         """Удаление изображения"""
-        print("Изображение удалено")
+        self.current_photo_path = None
+        self.lbl_img.setText("Нет фото")
+        self.lbl_img.setStyleSheet("background-color: #f0f0f0;")
 
     def _add_game(self):
         """Сохранение игры"""
@@ -311,7 +331,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.db.insert_game(data)
         self._refresh_games()
         self._clear_fields()
-        QtWidgets.QMessageBox.information(self, "Успех", "Запись добавлена в базу.")
+        QtWidgets.QMessageBox.information(self, "Успех", "Игра добавлена в базу.")
 
     def _clear_fields(self):
         """Очистка полей формы"""
