@@ -43,7 +43,7 @@ class GameCard(QtWidgets.QFrame):
 
         name_label = QtWidgets.QLabel(self.game_data['name'])
         name_label.setStyleSheet("font: 75 14pt 'Myanmar Text';")
-        # name_label.setWordWrap(True)
+        name_label.setWordWrap(True)
         name_label.setAlignment(QtCore.Qt.AlignCenter)
         
         players_label = QtWidgets.QLabel(f"Кол-во игроков: {self.game_data['players']}+")
@@ -100,11 +100,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.edit_id = None
 
         self.setWindowTitle("Архив настольных игр")
-        self.resize(1350, 870)
-        self.setMinimumSize(QtCore.QSize(1000, 600))
-        self.setStyleSheet("background-color: rgb(234, 239, 255);\n"
-"font: 9pt \"Myanmar Text\";\n"
-"")
+        self.resize(1000, 800)
+        self.setMinimumSize(QtCore.QSize(1000, 800))
+        self.setStyleSheet("background-color: rgb(234, 239, 255);font: 9pt \"Myanmar Text\";")
         # Инициализация БД
         self.db = database.DatabaseManager()
         if not self.db.init_db():
@@ -128,15 +126,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # Левая часть (коллекция)
         self.lbl_collection = QtWidgets.QLabel("Коллекция")
         self.lbl_collection.setStyleSheet("font: 63 20pt \"Yu Gothic UI Semibold\";")
-        
-        self.lbl_filter = QtWidgets.QLabel("Фильтр по количеству игроков:")
+        self.lbl_filter = QtWidgets.QLabel("Фильтр по минимуму игроков:")
         self.sb_filter = QtWidgets.QSpinBox(self.central_widget)
         self.sb_filter.setRange(1, 20)
         self.sb_filter.setValue(1)
         
         self.btn_clean_filter = QtWidgets.QPushButton("Сбросить фильтр")
-        self.btn_clean_filter.setStyleSheet("background-color: rgb(170, 255, 255);")
-
+        self.btn_clean_filter.setStyleSheet("background-color: light gray;")
         self.left_btn_layout = QtWidgets.QHBoxLayout()
         self.left_btn_layout.addWidget(self.lbl_filter)
         self.left_btn_layout.addWidget(self.sb_filter)
@@ -160,12 +156,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.left_layout.addLayout(self.left_btn_layout)
         self.left_layout.addWidget(self.scroll_area)
         self.left_layout.setStretch(2, 1)
-        
         self.main_layout.addLayout(self.left_layout)
         
         # Правая часть (карточка игры)
         self.right_layout = QtWidgets.QVBoxLayout()
-        
         self.game = QtWidgets.QLabel("Игра")
         self.game.setStyleSheet("font: 63 20pt \"Yu Gothic UI Semibold\";")
         self.right_layout.addWidget(self.game)
@@ -173,7 +167,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.frame = QtWidgets.QFrame(self.central_widget)
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        
         self.frame_layout = QtWidgets.QVBoxLayout(self.frame)
         self.frame_layout.setContentsMargins(10, 10, 10, 10)
         
@@ -234,14 +227,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.card_layout.addWidget(self.btn_cancel)
         
         self.frame_layout.addWidget(self.verticalLayoutWidget)
-        
         self.right_layout.addWidget(self.frame)
+
         self.right_layout.setStretch(1, 1)
-        
+
         self.main_layout.addLayout(self.right_layout)
         self.main_layout.setStretch(0, 2)
         self.main_layout.setStretch(1, 1)
-        
         self.setCentralWidget(self.central_widget)
 
     def _bind_signals(self):
@@ -255,41 +247,32 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def _refresh_games(self):
         """Обновление данных из БД"""
-        # Очищаем контейнер
-        for i in reversed(range(self.cards_layout.count())):
-            widget = self.cards_layout.itemAt(i).widget()
-            if widget:
-                widget.deleteLater()
-        # Получаем данные
         games = self.db.get_all()
-        # Создаем карточки
-        for i, game in enumerate(games):
-            card = GameCard(game, self)
-            row = i // 3
-            col = i % 3
-            self.cards_layout.addWidget(card, row, col)
+        self._show_cards(games)
 
     def _apply_filter(self):
         """Применение фильтра"""
+        self.btn_clean_filter.setStyleSheet("background-color: rgb(170, 255, 255);")
         min_players = self.sb_filter.value()
         games = self.db.get_filtered(min_players)
-        self._filtered_cards(games)
+        self._show_cards(games)
 
-    def _filtered_cards(self, games):
-        """Отображение карточек, соответствующих фильтру"""
+    def _show_cards(self, games):
+        """Отображение карточек соответствующих условию"""
         for i in reversed(range(self.cards_layout.count())):
             widget = self.cards_layout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
         for i, game in enumerate(games):
             card = GameCard(game, self)
-            row = i // 3
-            col = i % 3
+            row = i // 2
+            col = i % 2
             self.cards_layout.addWidget(card, row, col)
             
     def _clean_filter(self):
         """Сброс фильтра"""
         self.sb_filter.setValue(1)
+        self.btn_clean_filter.setStyleSheet("background-color: light gray;")
         self._refresh_games()
 
     def update_game(self, data):
@@ -318,7 +301,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             pixmap = QtGui.QPixmap(path)
             if not pixmap.isNull():
-                self.lbl_img.setPixmap(pixmap.scaled(400, 400, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
+                self.lbl_img.setPixmap(pixmap.scaled(300, 300, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
         except Exception as e:
             logger.error(f"Ошибка загрузки фото: {e}")
 
@@ -339,7 +322,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         try:
             img = Image.open(path).convert("RGBA") # Приводим к единому формату
-            img.thumbnail((400, 400), Image.Resampling.LANCZOS) # Масштабируем с сохранением пропорций
+            img.thumbnail((300, 300), Image.Resampling.LANCZOS) # Масштабируем с сохранением пропорций
             # Конвертация Pillow -> Qt
             qt_img = QtGui.QImage(img.tobytes(), img.width, img.height, QtGui.QImage.Format_RGBA8888)
             pixmap = QtGui.QPixmap.fromImage(qt_img)
@@ -372,8 +355,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "players": self.sb_count.value(),
             "time": time_minutes,
             "difficulty": self.cb_difficulty.currentText(),
-            "photo_path": self.current_photo_path
-        }
+            "photo_path": self.current_photo_path}
         try:
             if self.edit_id:
                 data['id'] = self.edit_id
