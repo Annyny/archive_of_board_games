@@ -221,13 +221,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_load_img.setStyleSheet("background-color: rgb(255, 170, 255);")
         self.btn_delete_img = QtWidgets.QPushButton("Удалить фото")
         self.btn_delete_img.setStyleSheet("background-color: rgb(255, 170, 255);")
-    
+
         self.btn_save = QtWidgets.QPushButton("Сохранить")
         self.btn_save.setStyleSheet("background-color: rgb(85, 170, 255);")
+        self.btn_cancel = QtWidgets.QPushButton("Отменить") 
+        self.btn_cancel.setStyleSheet("background-color: rgb(85, 170, 255);")
+        self.btn_cancel.setVisible(False)
         
         self.card_layout.addWidget(self.btn_load_img)
         self.card_layout.addWidget(self.btn_delete_img)
         self.card_layout.addWidget(self.btn_save)
+        self.card_layout.addWidget(self.btn_cancel)
         
         self.frame_layout.addWidget(self.verticalLayoutWidget)
         
@@ -247,6 +251,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_load_img.clicked.connect(self._load_img)
         self.btn_delete_img.clicked.connect(self._delete_img)
         self.btn_save.clicked.connect(self._save_game)
+        self.btn_cancel.clicked.connect(self._clear_fields)
     
     def _refresh_games(self):
         """Обновление данных из БД"""
@@ -289,6 +294,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_game(self, data):
         """Редактирование игры"""
+        self.btn_cancel.setVisible(True)
+        self.btn_save.setText("Обновить")
         self.edit_id = data['id']
         self.le_name.setText(data['name'])
         self.sb_count.setValue(data['players'])
@@ -299,8 +306,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.time_edit.setTime(time)
         index = self.cb_difficulty.findText(data['difficulty'])
         self.cb_difficulty.setCurrentIndex(index)
-        # if index >= 0:
-        #     self.cb_difficulty.setCurrentIndex(index)
         if data['photo_path']:
             self.current_photo_path = data['photo_path']
             self._load_img_to_edit(data['photo_path'])
@@ -359,7 +364,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         time = self.time_edit.time()
         time_minutes = time.hour() * 60 + time.minute() 
-        if time_minutes < 1:
+        if time_minutes <= 0:
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Время партии должно быть больше 0 минут.")
             return
         data = {
@@ -373,12 +378,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.edit_id:
                 data['id'] = self.edit_id
                 success = self.db.update_game(data)
-                msg = "обновлена"
             else:
                 success = self.db.insert_game(data)
-                msg = "добавлена"
             if success:
-                QtWidgets.QMessageBox.information(self, "Успех", f"Игра {msg}!")
                 self._refresh_games()
                 self._clear_fields()
             else:
@@ -389,6 +391,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _clear_fields(self):
         """Очистка полей формы"""
+        self.btn_cancel.setVisible(False)
+        self.btn_save.setText("Сохранить")
         self.le_name.clear()
         self.lbl_img.setText("Нет фото")
         self.lbl_img.setStyleSheet("background-color: #f0f0f0;")     
