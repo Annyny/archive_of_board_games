@@ -45,6 +45,25 @@ class DatabaseManager:
         except sqlite3.Error as e:
             logger.error(f"Ошибка получения записей: {e}")
             return []
+        
+    def update_game(self, data):
+        """Обновление записи"""
+        try:
+            self.cursor.execute("""UPDATE games SET name = ?, players = ?, time = ?,
+                    difficulty = ?, photo_path = ? WHERE id = ?""", 
+               (data['name'],
+                data['players'],
+                data['time'],
+                data['difficulty'],
+                data['photo_path'],
+                data['id']))
+            self.conn.commit()
+            logger.info(f"Запись ID {data['id']} обновлена")
+            return True
+        except sqlite3.Error as e:
+            logger.error(f"Ошибка обновления: {e}")
+            self.conn.rollback()
+            return False
           
     def insert_game(self, data):
         """Добавление игры"""

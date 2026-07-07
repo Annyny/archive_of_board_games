@@ -32,11 +32,7 @@ class GameCard(QtWidgets.QFrame):
         if self.game_data['photo_path']:
             pixmap = QtGui.QPixmap(self.game_data['photo_path'])
             if not pixmap.isNull():
-                self.image_label.setPixmap(pixmap.scaled(
-                    200, 200,
-                    QtCore.Qt.KeepAspectRatio,
-                    QtCore.Qt.SmoothTransformation
-                ))
+                self.image_label.setPixmap(pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
             else:
                 self.image_label.setText("Нет фото")
         else:
@@ -64,6 +60,10 @@ class GameCard(QtWidgets.QFrame):
         difficulty = self.game_data['difficulty']   
         diff_label = QtWidgets.QLabel(difficulty)
 
+        self.btn_update = QtWidgets.QPushButton("Редактировать")
+        self.btn_update.setStyleSheet("background-color: rgb(255, 170, 127);")
+        self.btn_update.clicked.connect(self.on_update)
+
         self.btn_delete = QtWidgets.QPushButton("Удалить")
         self.btn_delete.setStyleSheet("background-color: rgb(255, 170, 127);")
         self.btn_delete.clicked.connect(self.on_delete)
@@ -75,25 +75,33 @@ class GameCard(QtWidgets.QFrame):
         
         layout.addWidget(self.image_label)
         layout.addLayout(info_layout)
+        layout.addWidget(self.btn_update)
         layout.addWidget(self.btn_delete)
         
         self.setLayout(layout)
 
+    def on_update(self):
+        """Обработка редактирования"""
+        if self.parent_window:
+            self.parent_window.update_game(self.game_data)
+
     def on_delete(self):
         """Обработка удаления"""
         if self.parent_window:
-            self.parent_window._delete_game(self.game_data['id'])
+            self.parent_window.delete_game(self.game_data['id'])
 
 
 class MainWindow(QtWidgets.QMainWindow):
+    """Главное окно"""
     def __init__(self):
         super().__init__()
 
         self.current_photo_path = None
+        self.edit_id = None
 
         self.setWindowTitle("Архив настольных игр")
         self.resize(1350, 870)
-        self.setMinimumSize(QtCore.QSize(1350, 870))
+        self.setMinimumSize(QtCore.QSize(1000, 600))
         self.setStyleSheet("background-color: rgb(234, 239, 255);\n"
 "font: 9pt \"Myanmar Text\";\n"
 "")
@@ -114,6 +122,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Настройка интерфейса"""
         self.central_widget = QtWidgets.QWidget()
         self.main_layout = QtWidgets.QHBoxLayout(self.central_widget)
+        self.main_layout.setSpacing(15)
         self.main_layout.setContentsMargins(10, 10, 10, 10)
         
         # Левая часть (коллекция)
@@ -213,12 +222,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_delete_img = QtWidgets.QPushButton("Удалить фото")
         self.btn_delete_img.setStyleSheet("background-color: rgb(255, 170, 255);")
     
-        self.btn_add = QtWidgets.QPushButton("Добавить игру")
-        self.btn_add.setStyleSheet("background-color: rgb(85, 170, 255);")
+        self.btn_save = QtWidgets.QPushButton("Сохранить")
+        self.btn_save.setStyleSheet("background-color: rgb(85, 170, 255);")
         
         self.card_layout.addWidget(self.btn_load_img)
         self.card_layout.addWidget(self.btn_delete_img)
-        self.card_layout.addWidget(self.btn_add)
+        self.card_layout.addWidget(self.btn_save)
         
         self.frame_layout.addWidget(self.verticalLayoutWidget)
         
@@ -237,11 +246,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_clean_filter.clicked.connect(self._clean_filter)
         self.btn_load_img.clicked.connect(self._load_img)
         self.btn_delete_img.clicked.connect(self._delete_img)
-        self.btn_add.clicked.connect(self._add_game)
-
-    def _time_to_minutes(self, time):
-        """Конвертация времени в минуты"""
-        return time.hour() * 60 + time.minute()
+        self.btn_save.clicked.connect(self._save_game)
     
     def _refresh_games(self):
         """Обновление данных из БД"""
@@ -250,13 +255,11 @@ class MainWindow(QtWidgets.QMainWindow):
             widget = self.cards_layout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
-        
         # Получаем данные
-        records = self.db.get_all()
-        
+        games = self.db.get_all()
         # Создаем карточки
-        for i, record in enumerate(records):
-            card = GameCard(record, self)
+        for i, game in enumerate(games):
+            card = GameCard(game, self)
             row = i // 3
             col = i % 3
             self.cards_layout.addWidget(card, row, col)
@@ -273,9 +276,8 @@ class MainWindow(QtWidgets.QMainWindow):
             widget = self.cards_layout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
-        
-        for i, record in enumerate(games):
-            card = GameCard(record, self)
+        for i, game in enumerate(games):
+            card = GameCard(game, self)
             row = i // 3
             col = i % 3
             self.cards_layout.addWidget(card, row, col)
@@ -285,7 +287,37 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sb_filter.setValue(1)
         self._refresh_games()
 
-    def _delete_game(self, id):
+    def update_game(self, data):
+        """Редактирование игры"""
+        self.edit_id = data['id']
+        self.le_name.setText(data['name'])
+        self.sb_count.setValue(data['players'])
+        minutes = data['time']
+        hours = minutes // 60
+        minute = minutes % 60
+        time = QtCore.QTime(hours, minute)
+        self.time_edit.setTime(time)
+        index = self.cb_difficulty.findText(data['difficulty'])
+        self.cb_difficulty.setCurrentIndex(index)
+        # if index >= 0:
+        #     self.cb_difficulty.setCurrentIndex(index)
+        if data['photo_path']:
+            self.current_photo_path = data['photo_path']
+            self._load_img_to_edit(data['photo_path'])
+        else:
+            self.current_photo_path = None
+            self.lbl_img.setText("Нет фото")
+
+    def _load_img_to_edit(self, path):
+        """Загрузка фото для редактирования"""
+        try:
+            pixmap = QtGui.QPixmap(path)
+            if not pixmap.isNull():
+                self.lbl_img.setPixmap(pixmap.scaled(400, 400, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
+        except Exception as e:
+            logger.error(f"Ошибка загрузки фото: {e}")
+
+    def delete_game(self, id):
         """Удаление игры"""
         reply = QtWidgets.QMessageBox.question(self,"Подтверждение удаления",
             "Вы уверены, что хотите удалить эту игру?",
@@ -293,10 +325,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QtWidgets.QMessageBox.Yes:
             if self.db.delete_game(id):
                 self._refresh_games()
-                self._clear_fields()
-                QtWidgets.QMessageBox.information(self, "Успех", "Игра удалена")
-            else:
-                QtWidgets.QMessageBox.critical(self, "Ошибка", "Не удалось удалить игру")
 
     def _load_img(self):
         """Загрузка изображения"""
@@ -306,7 +334,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         try:
             img = Image.open(path).convert("RGBA") # Приводим к единому формату
-            img.thumbnail((260, 260), Image.LANCZOS) # Масштабируем с сохранением пропорций
+            img.thumbnail((400, 400), Image.Resampling.LANCZOS) # Масштабируем с сохранением пропорций
             # Конвертация Pillow -> Qt
             qt_img = QtGui.QImage(img.tobytes(), img.width, img.height, QtGui.QImage.Format_RGBA8888)
             pixmap = QtGui.QPixmap.fromImage(qt_img)
@@ -324,18 +352,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lbl_img.setText("Нет фото")
         self.lbl_img.setStyleSheet("background-color: #f0f0f0;")
 
-    def _add_game(self):
+    def _save_game(self):
         """Сохранение игры"""
         if not self.le_name.text().strip():
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Поле 'Название' обязательно для заполнения.")
             return
-
-        time_minutes = self._time_to_minutes(self.time_edit.time())
-        
+        time = self.time_edit.time()
+        time_minutes = time.hour() * 60 + time.minute() 
         if time_minutes < 1:
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Время партии должно быть больше 0 минут.")
             return
-        
         data = {
             "name": self.le_name.text().strip(),
             "players": self.sb_count.value(),
@@ -343,19 +369,33 @@ class MainWindow(QtWidgets.QMainWindow):
             "difficulty": self.cb_difficulty.currentText(),
             "photo_path": self.current_photo_path
         }
-        self.db.insert_game(data)
-        self._refresh_games()
-        self._clear_fields()
-        QtWidgets.QMessageBox.information(self, "Успех", "Игра добавлена в базу.")
+        try:
+            if self.edit_id:
+                data['id'] = self.edit_id
+                success = self.db.update_game(data)
+                msg = "обновлена"
+            else:
+                success = self.db.insert_game(data)
+                msg = "добавлена"
+            if success:
+                QtWidgets.QMessageBox.information(self, "Успех", f"Игра {msg}!")
+                self._refresh_games()
+                self._clear_fields()
+            else:
+                QtWidgets.QMessageBox.critical(self, "Ошибка", "Не удалось сохранить игру")
+        except Exception as e:
+            logger.error(f"Ошибка сохранения: {e}")
+            QtWidgets.QMessageBox.critical(self, "Ошибка", f"Произошла ошибка: {str(e)}")
 
     def _clear_fields(self):
         """Очистка полей формы"""
         self.le_name.clear()
         self.lbl_img.setText("Нет фото")
-        self.lbl_img.setStyleSheet("background-color: #f0f0f0; border-radius: 8px;")     
+        self.lbl_img.setStyleSheet("background-color: #f0f0f0;")     
         self.sb_count.setValue(2)
         self.time_edit.setTime(QtCore.QTime(0, 30)) 
         self.cb_difficulty.setCurrentIndex(0)
+        self.edit_id = None
         self.current_photo_path = None
         
     def closeEvent(self, event):
