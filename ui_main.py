@@ -129,11 +129,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lbl_collection.setStyleSheet("font: 63 20pt \"Yu Gothic UI Semibold\";")
         self.lbl_filter = QtWidgets.QLabel("Фильтр по минимуму игроков:")
         self.sb_filter = QtWidgets.QSpinBox(self.central_widget)
+        self.sb_filter.setToolTip("Ctrl+F")
         self.sb_filter.setRange(1, 20)
         self.sb_filter.setValue(1)
         
         self.btn_clean_filter = QtWidgets.QPushButton("Сбросить фильтр")
         self.btn_clean_filter.setStyleSheet("background-color: light gray;")
+        self.btn_clean_filter.setToolTip("Ctrl+N")
         self.left_btn_layout = QtWidgets.QHBoxLayout()
         self.left_btn_layout.addWidget(self.lbl_filter)
         self.left_btn_layout.addWidget(self.sb_filter)
@@ -149,7 +151,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cards_container = QtWidgets.QWidget()
         self.cards_layout = QtWidgets.QGridLayout(self.cards_container)
         self.cards_layout.setContentsMargins(0, 0, 0, 0)
-        
         self.scroll_area.setWidget(self.cards_container)
 
         self.left_layout = QtWidgets.QVBoxLayout()
@@ -213,14 +214,18 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.btn_load_img = QtWidgets.QPushButton("Загрузить фото")
         self.btn_load_img.setStyleSheet("background-color: rgb(255, 170, 255);")
+        self.btn_load_img.setToolTip("Ctrl+L")
         self.btn_delete_img = QtWidgets.QPushButton("Удалить фото")
         self.btn_delete_img.setStyleSheet("background-color: rgb(255, 170, 255);")
+        self.btn_delete_img.setToolTip("Ctrl+D")
         self.btn_delete_img.setVisible(False)
 
         self.btn_save = QtWidgets.QPushButton("Сохранить")
         self.btn_save.setStyleSheet("background-color: rgb(85, 170, 255);")
+        self.btn_save.setToolTip('Ctrl+S')
         self.btn_cancel = QtWidgets.QPushButton("Отменить") 
         self.btn_cancel.setStyleSheet("background-color: rgb(85, 170, 255);")
+        self.btn_cancel.setToolTip("Ctrl+W")
         self.btn_cancel.setVisible(False)
         
         self.card_layout.addWidget(self.btn_load_img)
@@ -249,11 +254,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _setup_keysequence(self):
         """Настройка горячих клавиш"""
-        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+N"), self, self._clear_fields)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+N"), self, self._clean_filter)
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self._save_game)
-        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self, self.close)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self, self._clear_fields)
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self._apply_filter)
-    
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+L"), self, self._load_img)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+D"), self, self._delete_img)
     def _refresh_games(self):
         """Обновление данных из БД"""
         games = self.db.get_all()
@@ -277,6 +283,10 @@ class MainWindow(QtWidgets.QMainWindow):
             row = i // 3
             col = i % 3
             self.cards_layout.addWidget(card, row, col)
+        if not games:
+            empty_lbl = QtWidgets.QLabel("Нет игр в коллекции\nЧтобы добавить игру,\nзаполните все поля и нажмите кнопку 'Сохранить'")
+            empty_lbl.setAlignment(QtCore.Qt.AlignCenter)
+            self.cards_layout.addWidget(empty_lbl, 0, 0)
             
     def _clean_filter(self):
         """Сброс фильтра"""
@@ -286,6 +296,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_game(self, data):
         """Редактирование игры"""
+        self.btn_delete_img.setVisible(True)
         self.btn_cancel.setVisible(True)
         self.btn_save.setText("Обновить")
         self.edit_id = data['id']
@@ -353,7 +364,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _save_game(self):
         """Сохранение игры"""
-        self.btn_delete_img.setVisible(False)
         if not self.le_name.text().strip():
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Поле 'Название' обязательно для заполнения.")
             return
@@ -385,6 +395,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _clear_fields(self):
         """Очистка полей формы"""
+        self.btn_delete_img.setVisible(False)
         self.btn_cancel.setVisible(False)
         self.btn_save.setText("Сохранить")
         self.le_name.clear()
