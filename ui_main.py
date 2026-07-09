@@ -100,7 +100,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.edit_id = None
 
         self.setWindowTitle("Архив настольных игр")
-        self.resize(1000, 800)
+        self.resize(1200, 800)
         self.setMinimumSize(QtCore.QSize(1000, 800))
         self.setStyleSheet("background-color: rgb(234, 239, 255);font: 9pt \"Myanmar Text\";")
         # Инициализация БД
@@ -214,6 +214,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_load_img.setStyleSheet("background-color: rgb(255, 170, 255);")
         self.btn_delete_img = QtWidgets.QPushButton("Удалить фото")
         self.btn_delete_img.setStyleSheet("background-color: rgb(255, 170, 255);")
+        self.btn_delete_img.setVisible(False)
 
         self.btn_save = QtWidgets.QPushButton("Сохранить")
         self.btn_save.setStyleSheet("background-color: rgb(85, 170, 255);")
@@ -265,8 +266,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 widget.deleteLater()
         for i, game in enumerate(games):
             card = GameCard(game, self)
-            row = i // 2
-            col = i % 2
+            row = i // 3
+            col = i % 3
             self.cards_layout.addWidget(card, row, col)
             
     def _clean_filter(self):
@@ -329,6 +330,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lbl_img.setPixmap(pixmap)
             self.current_photo_path = path
             self.lbl_img.setStyleSheet("background-color: #f0f0f0;")
+            self.btn_delete_img.setVisible(True)
             logger.info(f"Загружено фото: {path}")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить изображение:\n{e}")
@@ -336,12 +338,14 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def _delete_img(self):
         """Удаление изображения"""
+        self.btn_delete_img.setVisible(False)
         self.current_photo_path = None
         self.lbl_img.setText("Нет фото")
         self.lbl_img.setStyleSheet("background-color: #f0f0f0;")
 
     def _save_game(self):
         """Сохранение игры"""
+        self.btn_delete_img.setVisible(False)
         if not self.le_name.text().strip():
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Поле 'Название' обязательно для заполнения.")
             return
