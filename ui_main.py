@@ -100,7 +100,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.edit_id = None
 
         self.setWindowTitle("Архив настольных игр")
-        self.resize(1200, 800)
+        self.resize(1300, 800)
         self.setMinimumSize(QtCore.QSize(1000, 800))
         self.setStyleSheet("background-color: rgb(234, 239, 255);font: 9pt \"Myanmar Text\";")
         # Инициализация БД
@@ -113,6 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._setup_ui()
         self._bind_signals()
         self._refresh_games()
+        self._setup_keysequence()
 
         logger.info("Главное окно инициализировано")
 
@@ -245,6 +246,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_delete_img.clicked.connect(self._delete_img)
         self.btn_save.clicked.connect(self._save_game)
         self.btn_cancel.clicked.connect(self._clear_fields)
+
+    def _setup_keysequence(self):
+        """Настройка горячих клавиш"""
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+N"), self, self._clear_fields)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self._save_game)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self, self.close)
+        QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self._apply_filter)
     
     def _refresh_games(self):
         """Обновление данных из БД"""
