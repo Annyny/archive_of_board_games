@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 DB_FILE = "archive.db"
 
 class DatabaseManager:
+    """Менеджер базы данных"""
     def __init__(self):
         self.conn = None
         self.cursor = None
@@ -47,7 +48,7 @@ class DatabaseManager:
             return []
         
     def update_game(self, data):
-        """Обновление записи"""
+        """Редактирование игры"""
         try:
             self.cursor.execute("""UPDATE games SET name = ?, players = ?, time = ?,
                     difficulty = ?, photo_path = ? WHERE id = ?""", 
@@ -58,10 +59,10 @@ class DatabaseManager:
                 data['photo_path'],
                 data['id']))
             self.conn.commit()
-            logger.info(f"Запись ID {data['id']} обновлена")
+            logger.info(f"Запись ID {data['id']} отредактирована")
             return True
         except sqlite3.Error as e:
-            logger.error(f"Ошибка обновления: {e}")
+            logger.error(f"Ошибка редактирования: {e}")
             self.conn.rollback()
             return False
           

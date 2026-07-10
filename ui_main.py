@@ -26,7 +26,6 @@ class GameCard(QtWidgets.QFrame):
         self.image_label.setMinimumHeight(150)
         self.image_label.setMaximumHeight(200)
         self.image_label.setStyleSheet("background-color: #f0f0f0; border-radius: 8px;")
-        self.image_label.setScaledContents(True)
         
         # Загрузка изображения
         if self.game_data['photo_path']:
@@ -181,7 +180,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lbl_img.setAlignment(QtCore.Qt.AlignCenter)
         self.lbl_img.setMinimumHeight(200)
         self.lbl_img.setMaximumHeight(300)
-        self.lbl_img.setScaledContents(True)
         self.lbl_img.setStyleSheet("background-color: #f0f0f0; border-radius: 8px;")
         self.card_layout.addWidget(self.lbl_img)
         
@@ -380,7 +378,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if players < 2:
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Минимальное количество игроков должно быть больше 1.")
             return
-        # запись данных
+        # Запись данных
         data = {
             "name": self.le_name.text().strip(),
             "players": self.sb_count.value(),
