@@ -96,4 +96,4 @@ CREATE TABLE games (
 ![Редактирование игры](screenshots/update_card.png)
 ### Фильтрация
 Удобная фильтрация по количеству игроков.
-![Фильтрация](screenshots/filtered_games.gif)
+![Фильтрация](screenshots/filtered_games.png)
