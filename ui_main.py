@@ -60,6 +60,7 @@ class GameCard(QtWidgets.QFrame):
         difficulty = self.game_data['difficulty']   
         diff_label = QtWidgets.QLabel(difficulty)
 
+        # Кнопки управления карточкой
         self.btn_update = QtWidgets.QPushButton("Редактировать")
         self.btn_update.setStyleSheet("background-color: rgb(255, 170, 127);")
         self.btn_update.clicked.connect(self.on_update)
@@ -260,6 +261,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self._apply_filter)
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+L"), self, self._load_img)
         QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+D"), self, self._delete_img)
+
     def _refresh_games(self):
         """Обновление данных из БД"""
         games = self.db.get_all()
@@ -283,6 +285,7 @@ class MainWindow(QtWidgets.QMainWindow):
             row = i // 3
             col = i % 3
             self.cards_layout.addWidget(card, row, col)
+        # Если нет записей
         if not games:
             empty_lbl = QtWidgets.QLabel("Нет игр в коллекции\nЧтобы добавить игру,\nзаполните все поля и нажмите кнопку 'Сохранить'")
             empty_lbl.setAlignment(QtCore.Qt.AlignCenter)
@@ -369,6 +372,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         time = self.time_edit.time()
         time_minutes = time.hour() * 60 + time.minute() 
+        # Валидация
         if time_minutes <= 0:
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Время партии должно быть больше 0 минут.")
             return
@@ -376,6 +380,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if players < 2:
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Минимальное количество игроков должно быть больше 1.")
             return
+        # запись данных
         data = {
             "name": self.le_name.text().strip(),
             "players": self.sb_count.value(),
