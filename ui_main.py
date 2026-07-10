@@ -372,6 +372,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if time_minutes <= 0:
             QtWidgets.QMessageBox.warning(self, "Ошибка", "Время партии должно быть больше 0 минут.")
             return
+        players = self.sb_count.value()
+        if players < 2:
+            QtWidgets.QMessageBox.warning(self, "Ошибка", "Минимальное количество игроков должно быть больше 1.")
+            return
         data = {
             "name": self.le_name.text().strip(),
             "players": self.sb_count.value(),
