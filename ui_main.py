@@ -297,7 +297,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_game(self, data):
         """Редактирование игры"""
-        self.btn_delete_img.setVisible(True)
         self.btn_cancel.setVisible(True)
         self.btn_save.setText("Обновить")
         self.edit_id = data['id']
@@ -311,6 +310,7 @@ class MainWindow(QtWidgets.QMainWindow):
         index = self.cb_difficulty.findText(data['difficulty'])
         self.cb_difficulty.setCurrentIndex(index)
         if data['photo_path']:
+            self.btn_delete_img.setVisible(True)
             self.current_photo_path = data['photo_path']
             self._load_img_to_edit(data['photo_path'])
         else:
